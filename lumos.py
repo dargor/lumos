@@ -122,5 +122,6 @@ if rgb:
     sys.stdout.write("dark" if lum < DARK_THRESHOLD else "light")
     sys.exit(0)
 
+debug("unable to determine background color")
 sys.stdout.write("unknown")
 sys.exit(2)
