@@ -19,6 +19,12 @@ DEBUG = os.environ.get("DEBUG") is not None
 DARK_THRESHOLD = 0.5
 
 
+def debug(*args: str) -> None:
+    """Print debug messages to stderr if DEBUG is enabled."""
+    if DEBUG:
+        print(*args, file=sys.stderr)  # noqa: T201
+
+
 def query_bg_from_terminal() -> str | None:
     """Query the terminal for its background color using OSC 11.
 
@@ -104,17 +110,14 @@ def luminance(rgb: tuple[int, int, int]) -> float:
 
 
 reply = query_bg_from_terminal()
-if DEBUG:
-    print(f"{reply=}")  # noqa: T201
+debug(f"{reply=}")
 
 rgb = parse_rgb(reply) if reply else None
-if DEBUG:
-    print(f"{rgb=}")  # noqa: T201
+debug(f"{rgb=}")
 
 if rgb:
     lum = luminance(rgb)
-    if DEBUG:
-        print(f"{lum=}")  # noqa: T201
+    debug(f"{lum=}")
 
     sys.stdout.write("dark" if lum < DARK_THRESHOLD else "light")
     sys.exit(0)
