@@ -1,0 +1,22 @@
+[package]
+name = "lumos"
+version = "0.0.1"
+authors = ["Gabriel Linder <linder.gabriel@gmail.com>"]
+edition = "2024"
+description = "CLI tool to detect whether your terminal is in light or dark mode"
+repository = "https://github.com/dargor/lumos"
+license = "MIT"
+keywords = ["terminal", "light", "dark", "theme", "background"]
+categories = ["command-line-utilities", "development-tools"]
+# disable publishing, for now
+publish = false
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+
+[lints.rust]
+missing_docs = "forbid"
+
+[dependencies]
+regex = "1.11"
+libc = "0.2"
