@@ -53,9 +53,6 @@ fn debug(message: &str) {
 ///
 /// - `Some(String)` containing the color response from the terminal
 /// - `None` if the query fails, times out, or the terminal doesn't support OSC 11
-///
-/// This function safely interacts with terminal attributes using the termios crate,
-/// and the terminal state is always restored even if an error occurs.
 fn query_bg_from_terminal() -> Option<String> {
     // Open /dev/tty for direct terminal access
     let mut file = OpenOptions::new()
