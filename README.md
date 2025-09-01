@@ -69,16 +69,18 @@ After validating the concept, I rewrote it in Rust for several compelling reason
 
 ```bash
 $ time ./lumos.py
-light./lumos.py  0.03s user 0.01s system 85% cpu 0.044 total
+dark./lumos.py  0.03s user 0.01s system 85% cpu 0.043 total
 
 $ time ./target/debug/lumos
-light./target/debug/lumos  0.00s user 0.00s system 32% cpu 0.019 total
+dark./target/debug/lumos  0.00s user 0.00s system 10% cpu 0.029 total
 
 $ time ./target/release/lumos
-light./target/release/lumos  0.00s user 0.00s system 41% cpu 0.014 total
+dark./target/release/lumos  0.00s user 0.00s system 10% cpu 0.025 total
 ```
 
-The Rust version is **3x faster** than Python! For a utility that might be called frequently in shell prompts or scripts, this matters.
+The Rust version is twice as fast as Python, while using only a fraction of the CPU.
+
+For a utility that might be called frequently in shell prompts or scripts, this matters.
 
 **Zero Dependencies** 🚀
 
@@ -122,6 +124,7 @@ Feel free to open a merge request to report other terminals that work or don't w
 | WezTerm               | ✅         |
 | VS Code               | ✅         |
 | Zed                   | ✅         |
+| Vim                   | ✅         |
 
 ### Terminal multiplexers
 
