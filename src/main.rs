@@ -76,11 +76,11 @@ fn query_bg_from_terminal() -> Option<String> {
 
     let result = {
         // Make the file descriptor non-blocking
-        let Ok(flags) = fcntl(fd, FcntlArg::F_GETFL) else {
+        let Ok(flags) = fcntl(&file, FcntlArg::F_GETFL) else {
             return None;
         };
         let new_flags = OFlag::from_bits_truncate(flags) | OFlag::O_NONBLOCK;
-        if fcntl(fd, FcntlArg::F_SETFL(new_flags)).is_err() {
+        if fcntl(&file, FcntlArg::F_SETFL(new_flags)).is_err() {
             return None;
         }
 
@@ -119,7 +119,7 @@ fn query_bg_from_terminal() -> Option<String> {
 
             // Restore blocking mode
             let original_flags = OFlag::from_bits_truncate(flags);
-            let _ = fcntl(fd, FcntlArg::F_SETFL(original_flags));
+            let _ = fcntl(&file, FcntlArg::F_SETFL(original_flags));
 
             // Parse the response
             let response = String::from_utf8_lossy(&buf);

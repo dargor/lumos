@@ -21,4 +21,4 @@ missing_docs = "forbid"
 regex = "1.11"
 libc = "0.2"
 termios = "0.3"
-nix = { version = "0.27", features = ["fs"] }
+nix = { version = "0.30", features = ["fs"] }
