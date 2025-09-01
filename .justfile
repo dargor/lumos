@@ -7,6 +7,11 @@ _help:
 audit:
     cargo deny check
 
+# run clippy
+[group("qa")]
+clippy:
+    cargo clippy
+
 # run tests
 [group("qa")]
 test:
@@ -14,7 +19,7 @@ test:
 
 # run all QA suite
 [group("qa")]
-qa: audit test
+qa: audit clippy test
 
 # install to ~/bin
 [group("install")]
