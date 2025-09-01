@@ -58,9 +58,11 @@ fn debug(message: &str) {
 /// and the terminal state is always restored even if an error occurs.
 fn query_bg_from_terminal() -> Option<String> {
     // Open /dev/tty for direct terminal access
-    let Ok(mut file) = OpenOptions::new().read(true).write(true).open("/dev/tty") else {
-        return None;
-    };
+    let mut file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open("/dev/tty")
+        .ok()?;
 
     let fd = file.as_raw_fd();
 
@@ -70,19 +72,13 @@ fn query_bg_from_terminal() -> Option<String> {
     // Set terminal to raw mode (no canonical mode, no echo)
     let mut new_termios = old_termios;
     new_termios.c_lflag &= !(ICANON | ECHO);
-    if tcsetattr(fd, TCSANOW, &new_termios).is_err() {
-        return None;
-    }
+    tcsetattr(fd, TCSANOW, &new_termios).ok()?;
 
     let result = {
         // Make the file descriptor non-blocking
-        let Ok(flags) = fcntl(&file, FcntlArg::F_GETFL) else {
-            return None;
-        };
+        let flags = fcntl(&file, FcntlArg::F_GETFL).ok()?;
         let new_flags = OFlag::from_bits_truncate(flags) | OFlag::O_NONBLOCK;
-        if fcntl(&file, FcntlArg::F_SETFL(new_flags)).is_err() {
-            return None;
-        }
+        fcntl(&file, FcntlArg::F_SETFL(new_flags)).ok()?;
 
         // Send OSC 11 query
         if file.write_all(b"\x1b]11;?\x07").is_err() {
