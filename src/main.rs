@@ -19,12 +19,15 @@
 //! - `DEBUG`: When set, enables debug output to stderr showing the query response,
 //!   parsed RGB values, and calculated luminance.
 
+use nix::fcntl::{FcntlArg, OFlag, fcntl};
 use regex::Regex;
 use std::env;
 use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::os::unix::io::AsRawFd;
 use std::process;
+use std::time::{Duration, Instant};
+use termios::{ECHO, ICANON, TCSANOW, Termios, tcsetattr};
 
 /// Threshold for determining if a color is dark or light based on luminance.
 /// Colors with luminance below this value are considered dark.
@@ -51,11 +54,8 @@ fn debug(message: &str) {
 /// - `Some(String)` containing the color response from the terminal
 /// - `None` if the query fails, times out, or the terminal doesn't support OSC 11
 ///
-/// # Safety
-///
-/// This function uses unsafe code to interact with terminal attributes via libc,
-/// but all unsafe operations are properly contained and the terminal state is
-/// always restored even if an error occurs.
+/// This function safely interacts with terminal attributes using the termios crate,
+/// and the terminal state is always restored even if an error occurs.
 fn query_bg_from_terminal() -> Option<String> {
     // Open /dev/tty for direct terminal access
     let Ok(mut file) = OpenOptions::new().read(true).write(true).open("/dev/tty") else {
@@ -65,19 +65,25 @@ fn query_bg_from_terminal() -> Option<String> {
     let fd = file.as_raw_fd();
 
     // Get current terminal attributes
-    let mut old_termios: libc::termios = unsafe { std::mem::zeroed() };
-    if unsafe { libc::tcgetattr(fd, &raw mut old_termios) } != 0 {
-        return None;
-    }
+    let old_termios = Termios::from_fd(fd).ok()?;
 
     // Set terminal to raw mode (no canonical mode, no echo)
     let mut new_termios = old_termios;
-    new_termios.c_lflag &= !(libc::ICANON | libc::ECHO);
-    if unsafe { libc::tcsetattr(fd, libc::TCSANOW, &raw const new_termios) } != 0 {
+    new_termios.c_lflag &= !(ICANON | ECHO);
+    if tcsetattr(fd, TCSANOW, &new_termios).is_err() {
         return None;
     }
 
     let result = {
+        // Make the file descriptor non-blocking
+        let Ok(flags) = fcntl(fd, FcntlArg::F_GETFL) else {
+            return None;
+        };
+        let new_flags = OFlag::from_bits_truncate(flags) | OFlag::O_NONBLOCK;
+        if fcntl(fd, FcntlArg::F_SETFL(new_flags)).is_err() {
+            return None;
+        }
+
         // Send OSC 11 query
         if file.write_all(b"\x1b]11;?\x07").is_err() {
             None
@@ -85,45 +91,35 @@ fn query_bg_from_terminal() -> Option<String> {
             let mut buf = Vec::new();
             let mut temp_buf = [0u8; 4096];
 
-            // Read response with timeout (100 iterations of 20ms each ≈ 2s)
-            for _ in 0..100 {
-                // Use select-like behavior with short timeout
-                let mut fd_set: libc::fd_set = unsafe { std::mem::zeroed() };
-                unsafe {
-                    libc::FD_ZERO(&raw mut fd_set);
-                    libc::FD_SET(fd, &raw mut fd_set);
-                }
+            // Read response with timeout (2 seconds total)
+            let start_time = Instant::now();
+            let timeout_duration = Duration::from_secs(2);
 
-                let mut timeout = libc::timeval {
-                    tv_sec: 0,
-                    tv_usec: 20_000, // 20ms
-                };
-
-                let select_result = unsafe {
-                    libc::select(
-                        fd + 1,
-                        &raw mut fd_set,
-                        std::ptr::null_mut(),
-                        std::ptr::null_mut(),
-                        &raw mut timeout,
-                    )
-                };
-
-                if select_result <= 0 {
-                    continue;
-                }
-
+            while start_time.elapsed() < timeout_duration {
+                // Try to read data
                 match file.read(&mut temp_buf) {
-                    Ok(n) if n > 0 => {
+                    Ok(0) => {
+                        // No data available, sleep briefly and try again
+                        std::thread::sleep(Duration::from_millis(20));
+                    }
+                    Ok(n) => {
                         buf.extend_from_slice(&temp_buf[..n]);
                         // Check for terminator (BEL or ST)
                         if buf.contains(&b'\x07') || buf.windows(2).any(|w| w == b"\x1b\\") {
                             break;
                         }
                     }
-                    _ => break,
+                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                        // No data available, sleep briefly and try again
+                        std::thread::sleep(Duration::from_millis(20));
+                    }
+                    Err(_) => break,
                 }
             }
+
+            // Restore blocking mode
+            let original_flags = OFlag::from_bits_truncate(flags);
+            let _ = fcntl(fd, FcntlArg::F_SETFL(original_flags));
 
             // Parse the response
             let response = String::from_utf8_lossy(&buf);
@@ -135,9 +131,7 @@ fn query_bg_from_terminal() -> Option<String> {
     };
 
     // Restore terminal attributes
-    unsafe {
-        libc::tcsetattr(fd, libc::TCSANOW, &raw const old_termios);
-    }
+    let _ = tcsetattr(fd, TCSANOW, &old_termios);
 
     result
 }
