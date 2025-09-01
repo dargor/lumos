@@ -20,6 +20,5 @@ unsafe_code = "forbid"
 
 [dependencies]
 regex = "1.11"
-libc = "0.2"
 termios = "0.3"
 nix = { version = "0.30", features = ["fs"] }
