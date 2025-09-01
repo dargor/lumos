@@ -122,6 +122,7 @@ Feel free to open a merge request to report other terminals that work or don't w
 | WezTerm               | ✅         |
 | VS Code               | ✅         |
 | Zed                   | ✅         |
+| Vim                   | ✅         |
 
 ### Terminal multiplexers
 
