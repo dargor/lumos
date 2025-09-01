@@ -72,16 +72,30 @@ fn query_bg_from_terminal() -> Option<String> {
     // Set terminal to raw mode (no canonical mode, no echo)
     let mut new_termios = old_termios;
     new_termios.c_lflag &= !(ICANON | ECHO);
-    tcsetattr(fd, TCSANOW, &new_termios).ok()?;
+    if tcsetattr(fd, TCSANOW, &new_termios).is_err() {
+        // No need to restore terminal attributes before returning
+        return None;
+    }
+    // From now on, terminal attributes need to be restored before returning
 
     let result = {
+        let Ok(flags) = fcntl(&file, FcntlArg::F_GETFL) else {
+            // Restore terminal attributes before returning
+            let _ = tcsetattr(fd, TCSANOW, &old_termios);
+            return None;
+        };
+
         // Make the file descriptor non-blocking
-        let flags = fcntl(&file, FcntlArg::F_GETFL).ok()?;
         let new_flags = OFlag::from_bits_truncate(flags) | OFlag::O_NONBLOCK;
-        fcntl(&file, FcntlArg::F_SETFL(new_flags)).ok()?;
+        if fcntl(&file, FcntlArg::F_SETFL(new_flags)).is_err() {
+            // Restore terminal attributes before returning
+            let _ = tcsetattr(fd, TCSANOW, &old_termios);
+            return None;
+        }
+        // From now on, file descriptor needs to be restored before returning
 
         // Send OSC 11 query
-        if file.write_all(b"\x1b]11;?\x07").is_err() {
+        let query_result = if file.write_all(b"\x1b]11;?\x07").is_err() {
             None
         } else {
             let mut buf = Vec::new();
@@ -113,17 +127,19 @@ fn query_bg_from_terminal() -> Option<String> {
                 }
             }
 
-            // Restore blocking mode
-            let original_flags = OFlag::from_bits_truncate(flags);
-            let _ = fcntl(&file, FcntlArg::F_SETFL(original_flags));
-
             // Parse the response
             let response = String::from_utf8_lossy(&buf);
             let re = Regex::new(r"]\s*11;([^\x07\x1b]*)").unwrap();
             re.captures(&response)
                 .and_then(|caps| caps.get(1))
                 .map(|m| m.as_str().to_string())
-        }
+        };
+
+        // Restore blocking mode (ignore errors as this is cleanup)
+        let original_flags = OFlag::from_bits_truncate(flags);
+        let _ = fcntl(&file, FcntlArg::F_SETFL(original_flags));
+
+        query_result
     };
 
     // Restore terminal attributes
