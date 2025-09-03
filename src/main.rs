@@ -217,10 +217,11 @@ fn parse_rgb(s: &str) -> Option<(u8, u8, u8)> {
 ///
 /// - `Some(u8)` - The converted value
 /// - `None` - If the string is not valid hex
-#[allow(clippy::cast_possible_truncation)]
 fn hex_to_u8(hex: &str) -> Option<u8> {
     let n = u32::from_str_radix(hex, 16).ok()?;
     if hex.len() == 2 {
+        // For 2-digit hex values, directly convert to u8
+        #[allow(clippy::cast_possible_truncation)]
         Some(n as u8)
     } else {
         // For longer hex values, scale from 16-bit to 8-bit
