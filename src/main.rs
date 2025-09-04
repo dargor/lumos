@@ -99,7 +99,6 @@ fn query_bg_from_terminal() -> Option<String> {
             None
         } else {
             let mut buf = Vec::new();
-            let mut temp_buf = [0u8; 4096];
 
             // Read response with timeout (2 seconds total)
             let start_time = Instant::now();
@@ -114,6 +113,7 @@ fn query_bg_from_terminal() -> Option<String> {
                     }
                     Ok(_) => {
                         // Data available, try to read
+                        let mut temp_buf = [0u8; 64];
                         match file.read(&mut temp_buf) {
                             Ok(0) => {
                                 debug("got EOF");
