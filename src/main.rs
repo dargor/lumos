@@ -20,10 +20,12 @@
 //!   parsed RGB values, and calculated luminance.
 
 use nix::fcntl::{FcntlArg, OFlag, fcntl};
+use nix::poll::{PollFd, PollFlags, poll};
 use regex::Regex;
 use std::env;
 use std::fs::OpenOptions;
 use std::io::{Read, Write};
+use std::os::fd::AsFd;
 use std::os::unix::io::AsRawFd;
 use std::process;
 use std::time::{Duration, Instant};
@@ -61,6 +63,7 @@ fn query_bg_from_terminal() -> Option<String> {
         .open("/dev/tty")
         .ok()?;
 
+    // Get a raw file descriptor
     let fd = file.as_raw_fd();
 
     // Get current terminal attributes
@@ -104,21 +107,33 @@ fn query_bg_from_terminal() -> Option<String> {
 
             while start_time.elapsed() < timeout_duration {
                 // Try to read data
-                match file.read(&mut temp_buf) {
+                let pollfd = PollFd::new(file.as_fd(), PollFlags::POLLIN);
+                match poll(&mut [pollfd], 20_u8) {
                     Ok(0) => {
                         // No data available, sleep briefly and try again
-                        std::thread::sleep(Duration::from_millis(20));
+                        debug("waiting for data...");
                     }
-                    Ok(n) => {
-                        buf.extend_from_slice(&temp_buf[..n]);
-                        // Check for terminator (BEL or ST)
-                        if buf.contains(&b'\x07') || buf.windows(2).any(|w| w == b"\x1b\\") {
-                            break;
+                    Ok(_) => {
+                        // Data available, try to read
+                        match file.read(&mut temp_buf) {
+                            Ok(0) => {
+                                debug("got EOF");
+                                break;
+                            }
+                            Ok(n) => {
+                                buf.extend_from_slice(&temp_buf[..n]);
+                                // Check for terminator (BEL or ST)
+                                if buf.contains(&b'\x07') || buf.windows(2).any(|w| w == b"\x1b\\")
+                                {
+                                    break;
+                                }
+                            }
+                            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                                // No data available, sleep briefly and try again
+                                debug("waiting for data...");
+                            }
+                            Err(_) => break,
                         }
-                    }
-                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                        // No data available, sleep briefly and try again
-                        std::thread::sleep(Duration::from_millis(20));
                     }
                     Err(_) => break,
                 }

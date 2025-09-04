@@ -72,13 +72,13 @@ $ time ./lumos.py
 dark./lumos.py  0.03s user 0.01s system 85% cpu 0.043 total
 
 $ time ./target/debug/lumos
-dark./target/debug/lumos  0.00s user 0.00s system 10% cpu 0.029 total
+dark./target/debug/lumos  0.00s user 0.00s system 87% cpu 0.008 total
 
 $ time ./target/release/lumos
-dark./target/release/lumos  0.00s user 0.00s system 10% cpu 0.025 total
+dark./target/release/lumos  0.00s user 0.00s system 84% cpu 0.005 total
 ```
 
-The Rust version is twice as fast as Python, while using only a fraction of the CPU.
+As you can see, the Rust version is _much_ faster than the Python version.
 
 For a utility that might be called frequently in shell prompts or scripts, this matters.
 
