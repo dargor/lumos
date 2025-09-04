@@ -176,7 +176,7 @@ fn parse_rgb(s: &str) -> Option<(u8, u8, u8)> {
     // Handle rgb: or rgba: format
     if s.starts_with("rgb:") || s.starts_with("rgba:") {
         let parts: Vec<&str> = s.split_once(':')?.1.split('/').collect();
-        if parts.len() >= 3 {
+        if parts.len() == 3 {
             let r = hex_to_u8(parts[0])?;
             let g = hex_to_u8(parts[1])?;
             let b = hex_to_u8(parts[2])?;
@@ -223,10 +223,12 @@ fn hex_to_u8(hex: &str) -> Option<u8> {
         // For 2-digit hex values, directly convert to u8
         #[allow(clippy::cast_possible_truncation)]
         Some(n as u8)
-    } else {
+    } else if hex.len() == 4 {
         // For longer hex values, scale from 16-bit to 8-bit
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         Some(((f64::from(n) / 65535.0) * 255.0).round() as u8)
+    } else {
+        None
     }
 }
 
@@ -307,22 +309,54 @@ mod tests {
     #[test]
     fn test_parse_rgb_hex() {
         assert_eq!(parse_rgb("#000000"), Some((0, 0, 0)));
-        assert_eq!(parse_rgb("#ffffff"), Some((255, 255, 255)));
         assert_eq!(parse_rgb("#ff0000"), Some((255, 0, 0)));
+        assert_eq!(parse_rgb("#00ff00"), Some((0, 255, 0)));
+        assert_eq!(parse_rgb("#0000ff"), Some((0, 0, 255)));
+        assert_eq!(parse_rgb("#ffffff"), Some((255, 255, 255)));
+        assert_eq!(parse_rgb("#ff00ff"), Some((255, 0, 255)));
+        assert_eq!(parse_rgb("#ff0000ff"), Some((255, 0, 0)));
+        assert_eq!(parse_rgb("#AbC123"), Some((171, 193, 35)));
+        assert_eq!(parse_rgb("#001122"), Some((0, 17, 34)));
+        assert_eq!(parse_rgb("  #ff0000  "), Some((255, 0, 0)));
+        assert_eq!(parse_rgb("#gg0000"), None);
+        assert_eq!(parse_rgb("#f00"), None);
+        assert_eq!(parse_rgb("#ff0000ff00"), None);
     }
 
     #[test]
     fn test_parse_rgb_rgb_format() {
-        assert_eq!(parse_rgb("rgb(0, 0, 0)"), Some((0, 0, 0)));
-        assert_eq!(parse_rgb("rgb(255, 255, 255)"), Some((255, 255, 255)));
-        assert_eq!(parse_rgb("rgb(255, 0, 0)"), Some((255, 0, 0)));
+        assert_eq!(parse_rgb("rgb(0,0,0)"), Some((0, 0, 0)));
+        assert_eq!(parse_rgb("rgb(255,0,0)"), Some((255, 0, 0)));
+        assert_eq!(parse_rgb("rgb(0,255,0)"), Some((0, 255, 0)));
+        assert_eq!(parse_rgb("rgb(0,0,255)"), Some((0, 0, 255)));
+        assert_eq!(parse_rgb("rgb(255,255,255)"), Some((255, 255, 255)));
+        assert_eq!(parse_rgb("rgb(255,0,255)"), Some((255, 0, 255)));
+        assert_eq!(parse_rgb("rgb(171,193,35)"), Some((171, 193, 35)));
+        assert_eq!(parse_rgb("rgb(0,17,34)"), Some((0, 17, 34)));
+        assert_eq!(parse_rgb("  rgb(255,0,0)  "), Some((255, 0, 0)));
+        assert_eq!(parse_rgb("rgb(0,0,256)"), None);
+        assert_eq!(parse_rgb("rgb(0,0)"), None);
+        assert_eq!(parse_rgb("rgb(0,0,0,0)"), None);
+        assert_eq!(parse_rgb("rgb(0,0,0,0,0)"), None);
+        assert_eq!(parse_rgb("rgb(0,0,0,0)"), None);
     }
 
     #[test]
     fn test_parse_rgb_rgb_colon_format() {
-        assert_eq!(parse_rgb("rgb:00/00/00"), Some((0, 0, 0)));
-        assert_eq!(parse_rgb("rgb:ff/ff/ff"), Some((255, 255, 255)));
+        assert_eq!(parse_rgb("rgb:0000/0000/0000"), Some((0, 0, 0)));
         assert_eq!(parse_rgb("rgb:ffff/0000/0000"), Some((255, 0, 0)));
+        assert_eq!(parse_rgb("rgb:0000/ffff/0000"), Some((0, 255, 0)));
+        assert_eq!(parse_rgb("rgb:0000/0000/ffff"), Some((0, 0, 255)));
+        assert_eq!(parse_rgb("rgb:ffff/ffff/ffff"), Some((255, 255, 255)));
+        assert_eq!(parse_rgb("rgb:ffff/0000/ffff"), Some((255, 0, 255)));
+        assert_eq!(parse_rgb("rgb:abcd/C1AB/230A"), Some((171, 193, 35)));
+        assert_eq!(parse_rgb("  rgb:00/11/22  "), Some((0, 17, 34)));
+        assert_eq!(parse_rgb("rgb:ff00/0000/0000"), Some((254, 0, 0)));
+        assert_eq!(parse_rgb("rgb:gggg/gggg/gggg"), None);
+        assert_eq!(parse_rgb("rgb:000/000/000"), None);
+        assert_eq!(parse_rgb("rgb:00000/00000/00000"), None);
+        assert_eq!(parse_rgb("rgb:0000/0000/0000/0000"), None);
+        assert_eq!(parse_rgb("rgb:0000/0000/0000/0000/0000"), None);
     }
 
     #[test]
@@ -331,6 +365,15 @@ mod tests {
         assert_eq!(hex_to_u8("ff"), Some(255));
         assert_eq!(hex_to_u8("ffff"), Some(255));
         assert_eq!(hex_to_u8("0000"), Some(0));
+        assert_eq!(hex_to_u8("8000"), Some(128));
+        assert_eq!(hex_to_u8("7fff"), Some(127));
+        assert_eq!(hex_to_u8("0080"), Some(0));
+        assert_eq!(hex_to_u8("1234"), Some(18));
+        assert_eq!(hex_to_u8("abcd"), Some(171));
+        assert_eq!(hex_to_u8("00000"), None);
+        assert_eq!(hex_to_u8("123"), None);
+        assert_eq!(hex_to_u8("xyz"), None);
+        assert_eq!(hex_to_u8(""), None);
     }
 
     #[test]
@@ -340,5 +383,16 @@ mod tests {
         // Test a mid-gray
         let mid_gray_lum = luminance((128, 128, 128));
         assert!(mid_gray_lum > 0.0 && mid_gray_lum < 1.0);
+        // Test colors with different luminance contributions
+        assert!((luminance((255, 0, 0)) - 0.2126).abs() < 0.001); // Red should have low luminance
+        assert!((luminance((0, 255, 0)) - 0.7152).abs() < 0.001); // Green should have high luminance
+        assert!((luminance((0, 0, 255)) - 0.0722).abs() < 0.001); // Blue should have very low luminance
+        // Test edge cases with non-linear conversion
+        assert!((luminance((0, 0, 0)) - 0.0).abs() < 0.001);
+        assert!((luminance((255, 255, 255)) - 1.0).abs() < 0.001);
+        // Test a subtle color difference that should be distinguishable
+        let very_dark = luminance((1, 1, 1));
+        let slightly_lighter = luminance((2, 2, 2));
+        assert!(slightly_lighter > very_dark);
     }
 }
