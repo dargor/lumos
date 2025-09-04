@@ -108,10 +108,9 @@ fn query_bg_from_terminal() -> Option<String> {
             while start_time.elapsed() < timeout_duration {
                 // Try to read data
                 let pollfd = PollFd::new(file.as_fd(), PollFlags::POLLIN);
-                match poll(&mut [pollfd], 20_u8) {
+                match poll(&mut [pollfd], 250_u8) {
                     Ok(0) => {
                         // No data available, sleep briefly and try again
-                        debug("waiting for data...");
                     }
                     Ok(_) => {
                         // Data available, try to read
@@ -130,7 +129,6 @@ fn query_bg_from_terminal() -> Option<String> {
                             }
                             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                                 // No data available, sleep briefly and try again
-                                debug("waiting for data...");
                             }
                             Err(_) => break,
                         }
