@@ -189,7 +189,7 @@ fn parse_rgb(s: &str) -> Option<(u8, u8, u8)> {
     // Handle rgb: or rgba: format
     if s.starts_with("rgb:") || s.starts_with("rgba:") {
         let parts: Vec<&str> = s.split_once(':')?.1.split('/').collect();
-        if parts.len() == 3 {
+        if parts.len() == 3 || parts.len() == 4 {
             let r = hex_to_u8(parts[0])?;
             let g = hex_to_u8(parts[1])?;
             let b = hex_to_u8(parts[2])?;
@@ -368,7 +368,8 @@ mod tests {
         assert_eq!(parse_rgb("rgb:gggg/gggg/gggg"), None);
         assert_eq!(parse_rgb("rgb:000/000/000"), None);
         assert_eq!(parse_rgb("rgb:00000/00000/00000"), None);
-        assert_eq!(parse_rgb("rgb:0000/0000/0000/0000"), None);
+        assert_eq!(parse_rgb("rgb:1111/2222/3333/4444"), Some((17, 34, 51)));
+        assert_eq!(parse_rgb("rgba:1111/2222/3333/4444"), Some((17, 34, 51)));
         assert_eq!(parse_rgb("rgb:0000/0000/0000/0000/0000"), None);
     }
 
