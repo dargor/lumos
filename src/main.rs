@@ -139,6 +139,7 @@ fn query_bg_from_terminal() -> Option<String> {
 
             // Parse the response
             let response = String::from_utf8(buf).ok()?;
+            debug(&format!("response={response:?}"));
             let re = Regex::new(r"]\s*11;([^\x07\x1b]*)").unwrap();
             re.captures(&response)
                 .and_then(|caps| caps.get(1))
