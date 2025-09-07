@@ -167,6 +167,8 @@ fi
 
 ### Vim
 
+At startup:
+
 ```vim
 if executable('lumos')
     let g:terminal_background = trim(system('lumos'))
@@ -175,10 +177,8 @@ else
 endif
 
 if g:terminal_background ==# 'light'
-    set background=light
     colorscheme catppuccin_latte
 else
-    set background=dark
     colorscheme catppuccin_frappe
 endif
 ```
