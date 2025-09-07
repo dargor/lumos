@@ -183,6 +183,27 @@ else
 endif
 ```
 
+When gaining focus:
+
+```vim
+function! s:lumos()
+    let g:terminal_background = trim(system('lumos'))
+    if g:terminal_background ==# 'light'
+        if g:colors_name !=# 'catppuccin_latte'
+            colorscheme catppuccin_latte
+        endif
+    else
+        if g:colors_name !=# 'catppuccin_frappe'
+            colorscheme catppuccin_frappe
+        endif
+    endif
+endfunction
+
+autocmd FocusGained * call s:lumos()
+```
+
+See my [dotfiles](https://github.com/dargor/dotfiles) for more examples.
+
 ## Development
 
 ```bash
