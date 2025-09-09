@@ -19,6 +19,6 @@ missing_docs = "forbid"
 unsafe_code = "forbid"
 
 [dependencies]
-regex = "1.11"
-termios = "0.3"
-nix = { version = "0.30", features = ["fs", "poll"] }
+regex = "1.11.2"
+termios = "0.3.3"
+nix = { version = "0.30.1", features = ["fs", "poll"] }
