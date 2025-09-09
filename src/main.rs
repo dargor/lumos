@@ -148,13 +148,14 @@ fn query_bg_from_terminal() -> Result<String> {
 
         // Restore blocking mode (ignore errors as this is cleanup)
         let original_flags = OFlag::from_bits_truncate(flags);
-        let _ = fcntl(&file, FcntlArg::F_SETFL(original_flags));
+        fcntl(&file, FcntlArg::F_SETFL(original_flags))
+            .context("Failed to restore blocking mode")?;
 
         Ok(color_str)
     })();
 
     // Restore terminal attributes
-    let _ = tcsetattr(fd, TCSANOW, &old_termios);
+    tcsetattr(fd, TCSANOW, &old_termios).context("Failed to restore terminal attributes")?;
 
     result
 }
