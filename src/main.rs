@@ -25,7 +25,7 @@ use nix::poll::{PollFd, PollFlags, poll};
 use regex::Regex;
 use std::env;
 use std::fs::OpenOptions;
-use std::io::{Read, Write};
+use std::io::{self, IsTerminal, Read, Write};
 use std::os::fd::AsFd;
 use std::os::unix::io::AsRawFd;
 use std::process;
@@ -57,6 +57,11 @@ fn debug(message: &str) {
 /// - `Ok(String)` containing the color response from the terminal
 /// - `Err` if the query fails, times out, or the terminal doesn't support OSC 11
 fn query_bg_from_terminal() -> Result<String> {
+    // Check if we are running in a real terminal
+    if !io::stdout().is_terminal() {
+        return Err(anyhow!("Not a terminal"));
+    }
+
     // Open /dev/tty for direct terminal access
     let mut file = OpenOptions::new()
         .read(true)
