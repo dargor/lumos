@@ -24,7 +24,7 @@ use nix::fcntl::{FcntlArg, OFlag, fcntl};
 use nix::poll::{PollFd, PollFlags, poll};
 use regex::Regex;
 use std::env;
-use std::fs::OpenOptions;
+use std::fs::{File, OpenOptions};
 use std::io::{self, IsTerminal, Read, Write};
 use std::os::fd::AsFd;
 use std::os::unix::io::AsRawFd;
@@ -43,9 +43,205 @@ fn debug(message: &str) {
     }
 }
 
+/// Validates that the current process is running in a real terminal.
+///
+/// This function checks if stdout is connected to a terminal device,
+/// which is required for interactive terminal operations like querying
+/// background color.
+///
+/// # Returns
+///
+/// - `Ok(())` if running in a terminal
+/// - `Err` if not running in a terminal
+fn validate_terminal() -> Result<()> {
+    if !io::stdout().is_terminal() {
+        return Err(anyhow!("Not a terminal"));
+    }
+    Ok(())
+}
+
+/// Opens the terminal device for direct access.
+///
+/// This function opens `/dev/tty` with both read and write permissions,
+/// which allows direct communication with the terminal regardless of
+/// how stdin/stdout are redirected.
+///
+/// # Returns
+///
+/// - `Ok(File)` handle to the terminal device
+/// - `Err` if `/dev/tty` cannot be opened
+fn open_terminal_device() -> Result<File> {
+    OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open("/dev/tty")
+        .context("Failed to open /dev/tty")
+}
+
+/// Sets up the terminal in raw mode for direct character input.
+///
+/// Raw mode disables canonical input processing and echo, allowing
+/// the program to read terminal responses directly without interference
+/// from the shell or terminal driver.
+///
+/// # Arguments
+///
+/// - `file` - Terminal device file handle
+///
+/// # Returns
+///
+/// - `Ok(Termios)` containing the original terminal attributes that should be restored
+/// - `Err` if terminal attributes cannot be retrieved or set
+fn setup_raw_mode(file: &File) -> Result<Termios> {
+    let fd = file.as_raw_fd();
+    let old_termios = Termios::from_fd(fd).context("Failed to get terminal attributes")?;
+
+    let mut new_termios = old_termios;
+    new_termios.c_lflag &= !(ICANON | ECHO);
+    tcsetattr(fd, TCSANOW, &new_termios).context("Failed to set terminal to raw mode")?;
+
+    Ok(old_termios)
+}
+
+/// Sets the terminal file descriptor to non-blocking mode.
+///
+/// Non-blocking mode prevents read operations from hanging indefinitely
+/// if no data is available, allowing the program to implement timeouts
+/// and polling for terminal responses.
+///
+/// # Arguments
+///
+/// - `file` - Terminal device file handle
+///
+/// # Returns
+///
+/// - `Ok(OFlag)` containing the original file descriptor flags that should be restored
+/// - `Err` if file descriptor flags cannot be retrieved or set
+fn setup_non_blocking(file: &File) -> Result<OFlag> {
+    let flags = fcntl(file, FcntlArg::F_GETFL).context("Failed to get file descriptor flags")?;
+    let original_flags = OFlag::from_bits_truncate(flags);
+
+    let new_flags = original_flags | OFlag::O_NONBLOCK;
+    fcntl(file, FcntlArg::F_SETFL(new_flags))
+        .context("Failed to set file descriptor to non-blocking")?;
+
+    Ok(original_flags)
+}
+
+/// Sends an OSC 11 query to request the terminal's background color.
+///
+/// OSC (Operating System Command) 11 is a standard escape sequence
+/// that queries the terminal for its background color. The sequence
+/// `\x1b]11;?\x07` asks the terminal to respond with its current
+/// background color in RGB format.
+///
+/// # Arguments
+///
+/// - `file` - Mutable reference to the terminal device file handle
+///
+/// # Returns
+///
+/// - `Ok(())` if the query was sent successfully
+/// - `Err` if writing to the terminal fails
+fn send_osc_query(file: &mut File) -> Result<()> {
+    file.write_all(b"\x1b]11;?\x07")
+        .context("Failed to write OSC 11 query to terminal")
+}
+
+/// Reads the terminal's response to the OSC 11 query with timeout.
+///
+/// This function polls the terminal for data with a 2-second timeout,
+/// reading the response in chunks and looking for proper termination
+/// sequences (BEL `\x07` or ST `\x1b\\`). It uses non-blocking I/O
+/// to prevent hanging if the terminal doesn't respond.
+///
+/// # Arguments
+///
+/// - `file` - Mutable reference to the terminal device file handle
+///
+/// # Returns
+///
+/// - `Ok(Vec<u8>)` containing the raw terminal response
+/// - `Err` if polling fails, read operations fail, or timeout occurs
+fn read_terminal_response(file: &mut File) -> Result<Vec<u8>> {
+    let mut buf = Vec::new();
+    let start_time = Instant::now();
+    let timeout_duration = Duration::from_secs(2);
+
+    while start_time.elapsed() < timeout_duration {
+        let pollfd = PollFd::new(file.as_fd(), PollFlags::POLLIN);
+        match poll(&mut [pollfd], 250_u8) {
+            Ok(0) => {
+                // No data available, continue polling
+            }
+            Ok(_) => {
+                let mut temp_buf = [0u8; 64];
+                match file.read(&mut temp_buf) {
+                    Ok(0) => {
+                        debug("got EOF");
+                        break;
+                    }
+                    Ok(n) => {
+                        buf.extend_from_slice(&temp_buf[..n]);
+                        // Check for terminator (BEL or ST)
+                        if buf.contains(&b'\x07') || buf.windows(2).any(|w| w == b"\x1b\\") {
+                            break;
+                        }
+                    }
+                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                        // No data available, continue polling
+                    }
+                    Err(e) => return Err(anyhow!("Error reading from terminal: {}", e)),
+                }
+            }
+            Err(e) => return Err(anyhow!("Error polling terminal: {}", e)),
+        }
+    }
+
+    Ok(buf)
+}
+
+/// Parses the terminal's OSC 11 response to extract color information.
+///
+/// The terminal response typically looks like `\x1b]11;rgb:RRRR/GGGG/BBBB\x07`
+/// where RRRR, GGGG, BBBB are hexadecimal color values. This function uses
+/// a regular expression to extract the color string portion.
+///
+/// # Arguments
+///
+/// - `buf` - Raw bytes from the terminal response
+///
+/// # Returns
+///
+/// - `Ok(String)` containing the color specification (e.g., "rgb:0000/0000/0000")
+/// - `Err` if the response contains invalid UTF-8 or doesn't match expected format
+fn parse_color_response(buf: Vec<u8>) -> Result<String> {
+    debug(&format!("buf={buf:?}"));
+    let response = String::from_utf8(buf).context("Terminal response contained invalid UTF-8")?;
+    debug(&format!("response={response:?}"));
+
+    let re = Regex::new(r"]\s*11;([^\x07\x1b]*)").context("Failed to compile regex")?;
+    let color_str = re
+        .captures(&response)
+        .and_then(|caps| caps.get(1))
+        .map(|m| m.as_str().to_string())
+        .ok_or_else(|| anyhow!("No color information found in terminal response"))?;
+
+    Ok(color_str)
+}
+
 /// Query the terminal for its background color using OSC 11 escape sequence.
 ///
-/// This function sends an OSC 11 query (`\x1b]11;?\x07`) to the terminal and waits
+/// This function orchestrates the complete process of querying a terminal
+/// for its background color by:
+/// 1. Validating that we're running in a real terminal
+/// 2. Opening the terminal device for direct access
+/// 3. Setting up raw mode and non-blocking I/O
+/// 4. Sending the OSC 11 query
+/// 5. Reading and parsing the terminal's response
+/// 6. Cleaning up terminal state
+///
+/// The function sends an OSC 11 query (`\x1b]11;?\x07`) to the terminal and waits
 /// for a response. The terminal should respond with the current background color
 /// in a format like `rgb:RRRR/GGGG/BBBB` or similar.
 ///
@@ -57,104 +253,27 @@ fn debug(message: &str) {
 /// - `Ok(String)` containing the color response from the terminal
 /// - `Err` if the query fails, times out, or the terminal doesn't support OSC 11
 fn query_bg_from_terminal() -> Result<String> {
-    // Check if we are running in a real terminal
-    if !io::stdout().is_terminal() {
-        return Err(anyhow!("Not a terminal"));
-    }
+    validate_terminal()?;
 
-    // Open /dev/tty for direct terminal access
-    let mut file = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open("/dev/tty")
-        .context("Failed to open /dev/tty")?;
-
-    // Get a raw file descriptor
-    let fd = file.as_raw_fd();
-
-    // Get current terminal attributes
-    let old_termios = Termios::from_fd(fd).context("Failed to get terminal attributes")?;
-
-    // Set terminal to raw mode (no canonical mode, no echo)
-    let mut new_termios = old_termios;
-    new_termios.c_lflag &= !(ICANON | ECHO);
-    tcsetattr(fd, TCSANOW, &new_termios).context("Failed to set terminal to raw mode")?;
-    // From now on, terminal attributes need to be restored before returning
+    let mut file = open_terminal_device()?;
+    let old_termios = setup_raw_mode(&file)?;
 
     let result = (|| -> Result<String> {
-        let flags =
-            fcntl(&file, FcntlArg::F_GETFL).context("Failed to get file descriptor flags")?;
+        let original_flags = setup_non_blocking(&file)?;
 
-        // Make the file descriptor non-blocking
-        let new_flags = OFlag::from_bits_truncate(flags) | OFlag::O_NONBLOCK;
-        fcntl(&file, FcntlArg::F_SETFL(new_flags))
-            .context("Failed to set file descriptor to non-blocking")?;
-        // From now on, file descriptor needs to be restored before returning
+        send_osc_query(&mut file)?;
+        let buf = read_terminal_response(&mut file)?;
+        let color_str = parse_color_response(buf)?;
 
-        // Send OSC 11 query
-        file.write_all(b"\x1b]11;?\x07")
-            .context("Failed to write OSC 11 query to terminal")?;
-
-        let mut buf = Vec::new();
-
-        // Read response with timeout (2 seconds total)
-        let start_time = Instant::now();
-        let timeout_duration = Duration::from_secs(2);
-
-        while start_time.elapsed() < timeout_duration {
-            // Try to read data
-            let pollfd = PollFd::new(file.as_fd(), PollFlags::POLLIN);
-            match poll(&mut [pollfd], 250_u8) {
-                Ok(0) => {
-                    // No data available, sleep briefly and try again
-                }
-                Ok(_) => {
-                    // Data available, try to read
-                    let mut temp_buf = [0u8; 64];
-                    match file.read(&mut temp_buf) {
-                        Ok(0) => {
-                            debug("got EOF");
-                            break;
-                        }
-                        Ok(n) => {
-                            buf.extend_from_slice(&temp_buf[..n]);
-                            // Check for terminator (BEL or ST)
-                            if buf.contains(&b'\x07') || buf.windows(2).any(|w| w == b"\x1b\\") {
-                                break;
-                            }
-                        }
-                        Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                            // No data available, sleep briefly and try again
-                        }
-                        Err(e) => return Err(anyhow!("Error reading from terminal: {}", e)),
-                    }
-                }
-                Err(e) => return Err(anyhow!("Error polling terminal: {}", e)),
-            }
-        }
-
-        // Parse the response
-        debug(&format!("buf={buf:?}"));
-        let response =
-            String::from_utf8(buf).context("Terminal response contained invalid UTF-8")?;
-        debug(&format!("response={response:?}"));
-
-        let re = Regex::new(r"]\s*11;([^\x07\x1b]*)").context("Failed to compile regex")?;
-        let color_str = re
-            .captures(&response)
-            .and_then(|caps| caps.get(1))
-            .map(|m| m.as_str().to_string())
-            .ok_or_else(|| anyhow!("No color information found in terminal response"))?;
-
-        // Restore blocking mode (ignore errors as this is cleanup)
-        let original_flags = OFlag::from_bits_truncate(flags);
+        // Restore blocking mode before returning
         fcntl(&file, FcntlArg::F_SETFL(original_flags))
             .context("Failed to restore blocking mode")?;
 
         Ok(color_str)
     })();
 
-    // Restore terminal attributes
+    // Always restore terminal attributes
+    let fd = file.as_raw_fd();
     tcsetattr(fd, TCSANOW, &old_termios).context("Failed to restore terminal attributes")?;
 
     result
