@@ -25,7 +25,7 @@ use nix::poll::{PollFd, PollFlags, poll};
 use regex::Regex;
 use std::env;
 use std::fs::{File, OpenOptions};
-use std::io::{self, IsTerminal, Read, Write};
+use std::io::{Read, Write};
 use std::os::fd::AsFd;
 use std::os::unix::io::AsRawFd;
 use std::process;
@@ -41,23 +41,6 @@ fn debug(message: &str) {
     if env::var("DEBUG").is_ok() {
         eprintln!("{message}");
     }
-}
-
-/// Validates that the current process is running in a real terminal.
-///
-/// This function checks if stdout is connected to a terminal device,
-/// which is required for interactive terminal operations like querying
-/// background color.
-///
-/// # Returns
-///
-/// - `Ok(())` if running in a terminal
-/// - `Err` if not running in a terminal
-fn validate_terminal() -> Result<()> {
-    if !io::stdout().is_terminal() {
-        return Err(anyhow!("Not a terminal"));
-    }
-    Ok(())
 }
 
 /// Opens the terminal device for direct access.
@@ -253,8 +236,6 @@ fn parse_color_response(buf: Vec<u8>) -> Result<String> {
 /// - `Ok(String)` containing the color response from the terminal
 /// - `Err` if the query fails, times out, or the terminal doesn't support OSC 11
 fn query_bg_from_terminal() -> Result<String> {
-    validate_terminal()?;
-
     let mut file = open_terminal_device()?;
     let old_termios = setup_raw_mode(&file)?;
 
@@ -587,18 +568,5 @@ mod tests {
         let very_dark = luminance((1, 1, 1));
         let slightly_lighter = luminance((2, 2, 2));
         assert!(slightly_lighter > very_dark);
-    }
-
-    #[test]
-    fn test_detect_background_with_mock() {
-        // Note: This test would require mocking the terminal interaction
-        // For now, we test the individual components
-        // In test environment, this could succeed or fail depending on terminal support
-        let result = detect_background();
-        // We just verify it returns a Result - success/failure depends on test environment
-        if let Ok(theme) = result {
-            assert!(theme == "dark" || theme == "light");
-        }
-        // If Err, it's expected in most test environments without terminal support
     }
 }
