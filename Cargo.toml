@@ -1,6 +1,6 @@
 [package]
 name = "lumos"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Gabriel Linder <linder.gabriel@gmail.com>"]
 edition = "2024"
 description = "CLI tool to detect whether your terminal is in light or dark mode"
