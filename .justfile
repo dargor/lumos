@@ -10,7 +10,7 @@ audit:
 # run clippy
 [group("qa")]
 clippy:
-    cargo clippy
+    cargo clippy --all-targets
 
 # run tests
 [group("qa")]
