@@ -196,7 +196,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_color_response_edge_cases() -> Result<()> {
+    fn test_parse_color_response_edge_cases() {
         // Test empty response
         let response = b"".to_vec();
         assert!(parse_color_response(response).is_err());
@@ -208,7 +208,5 @@ mod tests {
         // Test malformed response
         let response = b"garbage data".to_vec();
         assert!(parse_color_response(response).is_err());
-
-        Ok(())
     }
 }
