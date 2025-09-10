@@ -11,7 +11,7 @@ mod terminal;
 use anyhow::{Context, Result};
 use std::process;
 
-use color::{classify_color, parse_rgb};
+use color::{classify_color, luminance, parse_rgb};
 use logs::debug;
 use osc::query_bg_from_terminal;
 
@@ -35,7 +35,7 @@ fn detect_background() -> Result<&'static str> {
     let rgb = parse_rgb(&reply).context("Failed to parse color response from terminal")?;
     debug(&format!("rgb={rgb:?}"));
 
-    let lum = color::luminance(rgb);
+    let lum = luminance(rgb);
     debug(&format!("lum={lum}"));
 
     Ok(classify_color(rgb))

@@ -11,7 +11,7 @@ use regex::Regex;
 
 /// Threshold for determining if a color is dark or light based on luminance.
 /// Colors with luminance below this value are considered dark.
-pub const DARK_THRESHOLD: f64 = 0.5;
+const DARK_THRESHOLD: f64 = 0.5;
 
 /// Parse an RGB color string into RGB tuple.
 ///
@@ -109,7 +109,7 @@ pub fn parse_rgb(s: &str) -> Result<(u8, u8, u8)> {
 ///
 /// - `Ok(u8)` - The converted value
 /// - `Err` - If the string is not valid hex
-pub fn hex_to_u8(hex: &str) -> Result<u8> {
+fn hex_to_u8(hex: &str) -> Result<u8> {
     let n = u32::from_str_radix(hex, 16).with_context(|| format!("Invalid hex string: {hex}"))?;
 
     match hex.len() {

@@ -15,6 +15,9 @@ use std::os::fd::AsFd;
 use std::time::{Duration, Instant};
 
 use crate::logs::debug;
+use crate::terminal::{
+    open_terminal_device, restore_flags, restore_terminal, setup_non_blocking, setup_raw_mode,
+};
 
 /// Sends an OSC 11 query to request the terminal's background color.
 ///
@@ -31,7 +34,7 @@ use crate::logs::debug;
 ///
 /// - `Ok(())` if the query was sent successfully
 /// - `Err` if writing to the terminal fails
-pub fn send_osc_query(file: &mut File) -> Result<()> {
+fn send_osc_query(file: &mut File) -> Result<()> {
     file.write_all(b"\x1b]11;?\x07")
         .context("Failed to write OSC 11 query to terminal")
 }
@@ -51,7 +54,7 @@ pub fn send_osc_query(file: &mut File) -> Result<()> {
 ///
 /// - `Ok(Vec<u8>)` containing the raw terminal response
 /// - `Err` if polling fails, read operations fail, or timeout occurs
-pub fn read_terminal_response(file: &mut File) -> Result<Vec<u8>> {
+fn read_terminal_response(file: &mut File) -> Result<Vec<u8>> {
     let mut buf = Vec::new();
     let start_time = Instant::now();
     let timeout_duration = Duration::from_secs(2);
@@ -103,7 +106,7 @@ pub fn read_terminal_response(file: &mut File) -> Result<Vec<u8>> {
 ///
 /// - `Ok(String)` containing the color specification (e.g., "rgb:0000/0000/0000")
 /// - `Err` if the response contains invalid UTF-8 or doesn't match expected format
-pub fn parse_color_response(buf: Vec<u8>) -> Result<String> {
+fn parse_color_response(buf: Vec<u8>) -> Result<String> {
     debug(&format!("buf={buf:?}"));
     let response = String::from_utf8(buf).context("Terminal response contained invalid UTF-8")?;
     debug(&format!("response={response:?}"));
@@ -140,10 +143,6 @@ pub fn parse_color_response(buf: Vec<u8>) -> Result<String> {
 /// - `Ok(String)` containing the color response from the terminal
 /// - `Err` if the query fails, times out, or the terminal doesn't support OSC 11
 pub fn query_bg_from_terminal() -> Result<String> {
-    use crate::terminal::{
-        open_terminal_device, restore_flags, restore_terminal, setup_non_blocking, setup_raw_mode,
-    };
-
     let mut file = open_terminal_device()?;
     let old_termios = setup_raw_mode(&file)?;
 
