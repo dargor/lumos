@@ -16,6 +16,7 @@ clippy:
 [group("qa")]
 test:
     cargo nextest run --all-targets
+    cargo test --doc
 
 # run all QA suite
 [group("qa")]
