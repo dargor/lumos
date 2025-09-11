@@ -6,9 +6,9 @@ A magical ✨ way to detect whether your terminal is in light or dark mode, beca
 
 I made this so Vim can adjust to current Zed mode.
 
-And when I say _I_ made this, I really mean _Claude Sonnet 4_ and _[Qwen3-30B-A3B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-30B-A3B-Instruct-2507)_ made this.
+And when I say _I_ made this, I really mean _Claude Sonnet 4_, _[Qwen3-30B-A3B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-30B-A3B-Instruct-2507)_ and _[gpt-oss-20b](https://huggingface.co/openai/gpt-oss-20b)_ made this with me.
 
-The rest of this file is mostly Claude's work, edited by myself.
+Even this file is mostly Claude's work, edited by myself.
 
 ## The Problem
 
