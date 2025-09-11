@@ -202,6 +202,14 @@ endfunction
 autocmd FocusGained * call s:lumos()
 ```
 
+Note that since `v9.1.1703` Vim has support for OSC 11 queries through its builtin plugin `colorresp.vim`, but for now it prevent colorschemes to load properly (`g:colors_name` undefined -> default colorscheme reported).
+
+I had to disable it like this, on top of my `.vimrc`:
+
+```vim
+let g:loaded_colorresp = 1
+```
+
 See my [dotfiles](https://github.com/dargor/dotfiles) for more examples.
 
 ## Development
