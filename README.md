@@ -4,11 +4,15 @@ A magical ✨ way to detect whether your terminal is in light or dark mode, beca
 
 ## Foreword
 
-I made this so Vim can adjust to current Zed mode.
+I made this so [Vim](https://www.vim.org/) can adjust to current [Zed](https://zed.dev/) mode, and to get some hands-on experience with _[vibe coding](https://en.wikipedia.org/wiki/Vibe_coding)_.
 
-And when I say _I_ made this, I really mean _Claude Sonnet 4_, _[Qwen3-30B-A3B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-30B-A3B-Instruct-2507)_ and _[gpt-oss-20b](https://huggingface.co/openai/gpt-oss-20b)_ made this with me.
+The following models were used:
 
-Even this file is mostly Claude's work, edited by myself.
+- [Claude Sonnet 4](https://www.anthropic.com/claude/sonnet), through Zed offering
+- [Qwen3-30B-A3B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-30B-A3B-Instruct-2507), hosted locally
+- [gpt-oss-20b](https://huggingface.co/openai/gpt-oss-20b), hosted locally
+
+Even this file is mostly their work, even if I edited it a bit.
 
 ## The Problem
 
