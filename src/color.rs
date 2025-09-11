@@ -157,6 +157,7 @@ fn hex_to_u8(hex: &str) -> Result<u8> {
 /// L = 0.2126 × R + 0.7152 × G + 0.0722 × B
 ///
 /// Where R, G, B are the linearized RGB values.
+#[must_use]
 pub fn luminance(rgb: (u8, u8, u8)) -> f64 {
     let (r, g, b) = rgb;
     let r = f64::from(r) / 255.0;
@@ -185,6 +186,7 @@ pub fn luminance(rgb: (u8, u8, u8)) -> f64 {
 ///
 /// - `"dark"` if luminance < `DARK_THRESHOLD`
 /// - `"light"` if luminance >= `DARK_THRESHOLD`
+#[must_use]
 pub fn classify_color(rgb: (u8, u8, u8)) -> &'static str {
     let lum = luminance(rgb);
     if lum < DARK_THRESHOLD {
