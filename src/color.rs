@@ -31,12 +31,19 @@ const DARK_THRESHOLD: f64 = 0.5;
 /// - `Ok((r, g, b))` where each component is 0-255
 /// - `Err` if the string cannot be parsed as a valid color
 ///
+/// # Errors
+///
+/// This function returns an error in the following cases:
+/// - The string is not in a recognized color format
+/// - A component value is invalid (e.g., non-hex characters, out of range)
+/// - The hex string has an invalid length (not 2 or 4 digits for hex values)
+/// - The RGB values are out of range (0-255)
+///
 /// # Examples
 ///
 /// ```
-/// # use anyhow::Result;
-/// # fn parse_rgb(s: &str) -> Result<(u8, u8, u8)> { unimplemented!() }
-/// assert_eq!(parse_rgb("rgb:ff00/8000/0000").unwrap(), (255, 128, 0));
+/// # use lumos::color::parse_rgb;
+/// assert_eq!(parse_rgb("rgb:ffff/8080/0000").unwrap(), (255, 128, 0));
 /// assert_eq!(parse_rgb("#ff8000").unwrap(), (255, 128, 0));
 /// assert_eq!(parse_rgb("rgb(255, 128, 0)").unwrap(), (255, 128, 0));
 /// ```
