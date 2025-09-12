@@ -2,6 +2,11 @@
 _help:
     just -l
 
+# run cargo machete
+[group("qa")]
+machete:
+    cargo machete
+
 # run cargo deny
 [group("qa")]
 audit:
@@ -20,7 +25,7 @@ test:
 
 # run all QA suite
 [group("qa")]
-qa: audit clippy test
+qa: machete audit clippy test
 
 # install to ~/bin
 [group("install")]
