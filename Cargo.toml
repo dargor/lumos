@@ -15,7 +15,6 @@ authors = ["Gabriel Linder <linder.gabriel@gmail.com>"]
 maintainers = ["Gabriel Linder <linder.gabriel@gmail.com>"]
 
 [lints.clippy]
-cargo = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 
 [lints.rust]
