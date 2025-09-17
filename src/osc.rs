@@ -7,17 +7,12 @@
 //! - Parsing OSC response formats
 
 use anyhow::{Context, Result, anyhow};
-use nix::poll::{PollFd, PollFlags, poll};
 use regex::Regex;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::os::fd::AsFd;
-use std::time::{Duration, Instant};
 
 use crate::logs::debug;
-use crate::terminal::{
-    open_terminal_device, restore_flags, restore_terminal, setup_non_blocking, setup_raw_mode,
-};
+use crate::terminal::{open_terminal_device, restore_terminal, setup_raw_mode};
 
 /// Sends an OSC 11 query to request the terminal's background color.
 ///
@@ -56,36 +51,24 @@ fn send_osc_query(file: &mut File) -> Result<()> {
 /// - `Err` if polling fails, read operations fail, or timeout occurs
 fn read_terminal_response(file: &mut File) -> Result<Vec<u8>> {
     let mut buf = Vec::new();
-    let start_time = Instant::now();
-    let timeout_duration = Duration::from_secs(2);
 
-    while start_time.elapsed() < timeout_duration {
-        let pollfd = PollFd::new(file.as_fd(), PollFlags::POLLIN);
-        match poll(&mut [pollfd], 250_u8) {
+    loop {
+        let mut temp_buf = [0u8; 64];
+        match file.read(&mut temp_buf) {
             Ok(0) => {
-                // No data available, continue polling
+                debug("got EOF");
+                break;
             }
-            Ok(_) => {
-                let mut temp_buf = [0u8; 64];
-                match file.read(&mut temp_buf) {
-                    Ok(0) => {
-                        debug("got EOF");
-                        break;
-                    }
-                    Ok(n) => {
-                        buf.extend_from_slice(&temp_buf[..n]);
-                        // Check for terminator (BEL or ST)
-                        if buf.contains(&b'\x07') || buf.windows(2).any(|w| w == b"\x1b\\") {
-                            break;
-                        }
-                    }
-                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                        // No data available, continue polling
-                    }
-                    Err(e) => return Err(anyhow!("Error reading from terminal: {}", e)),
+            Ok(n) => {
+                debug(&format!("got {n} bytes"));
+                buf.extend_from_slice(&temp_buf[..n]);
+                // Check for terminator (BEL or ST)
+                if buf.contains(&b'\x07') || buf.windows(2).any(|w| w == b"\x1b\\") {
+                    debug("got terminator");
+                    break;
                 }
             }
-            Err(e) => return Err(anyhow!("Error polling terminal: {}", e)),
+            Err(e) => return Err(anyhow!("Error reading from terminal: {}", e)),
         }
     }
 
@@ -147,14 +130,9 @@ pub fn query_bg_from_terminal() -> Result<String> {
     let old_termios = setup_raw_mode(&file)?;
 
     let result = (|| -> Result<String> {
-        let original_flags = setup_non_blocking(&file)?;
-
         send_osc_query(&mut file)?;
         let buf = read_terminal_response(&mut file)?;
         let color_str = parse_color_response(buf)?;
-
-        // Restore blocking mode before returning
-        restore_flags(&file, original_flags)?;
 
         Ok(color_str)
     })();
