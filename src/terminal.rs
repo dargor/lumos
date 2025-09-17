@@ -3,7 +3,6 @@
 //! This module provides functions for direct terminal access, including:
 //! - Opening the terminal device (`/dev/tty`)
 //! - Setting up raw mode for direct character input
-//! - Configuring non-blocking I/O for timeout handling
 //! - Proper cleanup and restoration of terminal state
 
 use anyhow::{Context, Result};

@@ -232,8 +232,6 @@ The implementation handles several tricky aspects:
 
 **Terminal State Management**: Temporarily switches to raw mode to capture the color response without interfering with normal terminal operation.
 
-**Timeout Handling**: Uses polling with a 2-second timeout to avoid hanging if the terminal doesn't respond.
-
 **Format Flexibility**: Supports the wild variety of color formats that different terminals return.
 
 **Cross-Platform**: Works on Unix-like systems (Linux, macOS, BSD) through direct `/dev/tty` access.

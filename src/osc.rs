@@ -3,7 +3,6 @@
 //! This module provides functions for:
 //! - Sending OSC 11 queries to request terminal background color
 //! - Reading and parsing terminal responses
-//! - Handling timeouts and non-blocking I/O
 //! - Parsing OSC response formats
 
 use anyhow::{Context, Result, anyhow};
@@ -34,12 +33,12 @@ fn send_osc_query(file: &mut File) -> Result<()> {
         .context("Failed to write OSC 11 query to terminal")
 }
 
-/// Reads the terminal's response to the OSC 11 query with timeout.
+/// Reads the terminal's response to the OSC 11 query.
 ///
-/// This function polls the terminal for data with a 2-second timeout,
-/// reading the response in chunks and looking for proper termination
-/// sequences (BEL `\x07` or ST `\x1b\\`). It uses non-blocking I/O
-/// to prevent hanging if the terminal doesn't respond.
+/// This function reads the terminal's response to an OSC 11 query. It reads
+/// data in chunks of 64 bytes and checks for termination sequences (BEL `\x07`
+/// or ST `\x1b\\`). The function returns the complete raw response, including
+/// the escape sequence prefix and termination.
 ///
 /// # Arguments
 ///
@@ -48,7 +47,7 @@ fn send_osc_query(file: &mut File) -> Result<()> {
 /// # Returns
 ///
 /// - `Ok(Vec<u8>)` containing the raw terminal response
-/// - `Err` if polling fails, read operations fail, or timeout occurs
+/// - `Err` if reading from the terminal fails
 fn read_terminal_response(file: &mut File) -> Result<Vec<u8>> {
     let mut buf = Vec::new();
 
@@ -109,17 +108,13 @@ fn parse_color_response(buf: Vec<u8>) -> Result<String> {
 /// This function orchestrates the complete process of querying a terminal
 /// for its background color by:
 /// 1. Opening the terminal device for direct access
-/// 2. Setting up raw mode and non-blocking I/O
-/// 3. Sending the OSC 11 query
-/// 4. Reading and parsing the terminal's response
-/// 5. Cleaning up terminal state
+/// 2. Sending the OSC 11 query
+/// 3. Reading and parsing the terminal's response
+/// 4. Cleaning up terminal state
 ///
 /// The function sends an OSC 11 query (`\x1b]11;?\x07`) to the terminal and waits
 /// for a response. The terminal should respond with the current background color
 /// in a format like `rgb:RRRR/GGGG/BBBB` or similar.
-///
-/// The function implements a timeout mechanism (approximately 2 seconds) to avoid
-/// hanging indefinitely if the terminal doesn't support this query.
 ///
 /// # Returns
 ///
