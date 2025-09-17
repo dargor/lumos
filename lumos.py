@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import os
 import re
-import select
 import sys
 import termios
 
@@ -30,7 +29,7 @@ def query_bg_from_terminal() -> str | None:
 
     Returns:
         The background color string returned by the terminal,
-        or None if the query fails or times out.
+        or None if the query fails.
 
     """
     try:
@@ -44,11 +43,11 @@ def query_bg_from_terminal() -> str | None:
     try:
         os.write(fd, b"\033]11;?\a")  # OSC 11 query
         buf = b""
-        for _ in range(100):  # up to ~2s
-            r, _, _ = select.select([fd], [], [], 0.02)
-            if not r:
-                continue
-            buf += os.read(fd, 4096)
+        while True:
+            data = os.read(fd, 4096)
+            if not data:
+                break
+            buf += data
             if b"\a" in buf or b"\033\\" in buf:  # BEL or ST terminator
                 break
     finally:
