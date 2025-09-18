@@ -175,7 +175,7 @@ At startup:
 
 ```vim
 if executable('lumos')
-    let g:terminal_background = trim(system('lumos'))
+    silent let g:terminal_background = trim(system('lumos'))
 else
     let g:terminal_background = 'unknown'
 endif
@@ -191,7 +191,7 @@ When gaining focus:
 
 ```vim
 function! s:lumos()
-    let g:terminal_background = trim(system('lumos'))
+    silent let g:terminal_background = trim(system('lumos'))
     if g:terminal_background ==# 'light'
         if g:colors_name !=# 'catppuccin_latte'
             colorscheme catppuccin_latte
