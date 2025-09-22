@@ -31,8 +31,8 @@ fn main() {
             process::exit(0);
         }
         Err(e) => {
-            debug(&format!("Error: {e:#}"));
-            debug("unable to determine background color");
+            debug!("Error: {e:#}");
+            debug!("unable to determine background color");
             print!("unknown");
             process::exit(2);
         }

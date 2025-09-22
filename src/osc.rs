@@ -10,7 +10,7 @@ use regex::Regex;
 use std::fs::File;
 use std::io::{Read, Write};
 
-use crate::logs::debug;
+use crate::debug;
 use crate::terminal::{open_terminal_device, restore_terminal, setup_raw_mode};
 
 /// Sends an OSC 11 query to request the terminal's background color.
@@ -55,15 +55,15 @@ fn read_terminal_response(file: &mut File) -> Result<Vec<u8>> {
         let mut temp_buf = [0u8; 64];
         match file.read(&mut temp_buf) {
             Ok(0) => {
-                debug("got EOF");
+                debug!("got EOF");
                 break;
             }
             Ok(n) => {
-                debug(&format!("got {n} bytes"));
+                debug!("got {n} bytes");
                 buf.extend_from_slice(&temp_buf[..n]);
                 // Check for terminator (BEL or ST)
                 if buf.contains(&b'\x07') || buf.windows(2).any(|w| w == b"\x1b\\") {
-                    debug("got terminator");
+                    debug!("got terminator");
                     break;
                 }
             }
@@ -89,9 +89,9 @@ fn read_terminal_response(file: &mut File) -> Result<Vec<u8>> {
 /// - `Ok(String)` containing the color specification (e.g., "rgb:0000/0000/0000")
 /// - `Err` if the response contains invalid UTF-8 or doesn't match expected format
 fn parse_color_response(buf: Vec<u8>) -> Result<String> {
-    debug(&format!("buf={buf:?}"));
+    debug!("buf={buf:?}");
     let response = String::from_utf8(buf).context("Terminal response contained invalid UTF-8")?;
-    debug(&format!("response={response:?}"));
+    debug!("response={response:?}");
 
     let re = Regex::new(r"]\s*11;([^\x07\x1b]*)").context("Failed to compile regex")?;
     let color_str = re

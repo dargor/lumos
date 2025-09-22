@@ -8,7 +8,6 @@ mod terminal;
 use anyhow::{Context, Result};
 
 use color::{classify_color, luminance, parse_rgb};
-pub use logs::debug;
 use osc::query_bg_from_terminal;
 
 /// Detect terminal background color and determine if it's dark or light.
@@ -33,13 +32,13 @@ use osc::query_bg_from_terminal;
 /// - `Err` if the background color cannot be determined
 pub fn detect_background() -> Result<&'static str> {
     let reply = query_bg_from_terminal().context("Failed to query terminal background color")?;
-    debug(&format!("reply={reply:?}"));
+    debug!("reply={reply:?}");
 
     let rgb = parse_rgb(&reply).context("Failed to parse color response from terminal")?;
-    debug(&format!("rgb={rgb:?}"));
+    debug!("rgb={rgb:?}");
 
     let lum = luminance(&rgb);
-    debug(&format!("lum={lum}"));
+    debug!("lum={lum}");
 
     Ok(classify_color(&rgb))
 }
