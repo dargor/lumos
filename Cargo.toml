@@ -22,6 +22,6 @@ missing_docs = "forbid"
 unsafe_code = "forbid"
 
 [dependencies]
-anyhow = "1.0.99"
+anyhow = "1.0.100"
 regex = "1.11.2"
 termios = "0.3.3"
