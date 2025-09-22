@@ -157,7 +157,7 @@ pub fn parse_rgb(s: &str) -> Result<RGB> {
         return Ok(RGB::new(r, g, b));
     }
 
-    Err(anyhow!("Unrecognized color format: {}", s))
+    Err(anyhow!("Unrecognized color format: {s}"))
 }
 
 /// Convert hex string to u8, handling different hex formats.

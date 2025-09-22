@@ -67,7 +67,7 @@ fn read_terminal_response(file: &mut File) -> Result<Vec<u8>> {
                     break;
                 }
             }
-            Err(e) => return Err(anyhow!("Error reading from terminal: {}", e)),
+            Err(e) => return Err(anyhow!("Error reading from terminal: {e}")),
         }
     }
 
