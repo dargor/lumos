@@ -14,7 +14,7 @@ use regex::Regex;
 const DARK_THRESHOLD: f64 = 0.5;
 
 /// RGB color representation with red, green, and blue components.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct RGB {
     /// Red component (0-255)
     pub r: u8,
@@ -215,7 +215,7 @@ fn hex_to_u8(hex: &str) -> Result<u8> {
 ///
 /// Where R, G, B are the linearized RGB values.
 #[must_use]
-pub fn luminance(rgb: RGB) -> f64 {
+pub fn luminance(rgb: &RGB) -> f64 {
     let r = f64::from(rgb.r) / 255.0;
     let g = f64::from(rgb.g) / 255.0;
     let b = f64::from(rgb.b) / 255.0;
@@ -243,7 +243,7 @@ pub fn luminance(rgb: RGB) -> f64 {
 /// - `"dark"` if luminance < `DARK_THRESHOLD`
 /// - `"light"` if luminance >= `DARK_THRESHOLD`
 #[must_use]
-pub fn classify_color(rgb: RGB) -> &'static str {
+pub fn classify_color(rgb: &RGB) -> &'static str {
     let lum = luminance(rgb);
     if lum < DARK_THRESHOLD {
         "dark"
@@ -336,31 +336,31 @@ mod tests {
 
     #[test]
     fn test_luminance() {
-        assert!((luminance(RGB::new(0, 0, 0)) - 0.0).abs() < 0.001);
-        assert!((luminance(RGB::new(255, 255, 255)) - 1.0).abs() < 0.001);
+        assert!((luminance(&RGB::new(0, 0, 0)) - 0.0).abs() < 0.001);
+        assert!((luminance(&RGB::new(255, 255, 255)) - 1.0).abs() < 0.001);
         // Test a mid-gray
-        let mid_gray_lum = luminance(RGB::new(128, 128, 128));
+        let mid_gray_lum = luminance(&RGB::new(128, 128, 128));
         assert!(mid_gray_lum > 0.0 && mid_gray_lum < 1.0);
         // Test colors with different luminance contributions
-        assert!((luminance(RGB::new(255, 0, 0)) - 0.2126).abs() < 0.001); // Red should have low luminance
-        assert!((luminance(RGB::new(0, 255, 0)) - 0.7152).abs() < 0.001); // Green should have high luminance
-        assert!((luminance(RGB::new(0, 0, 255)) - 0.0722).abs() < 0.001); // Blue should have very low luminance
+        assert!((luminance(&RGB::new(255, 0, 0)) - 0.2126).abs() < 0.001); // Red should have low luminance
+        assert!((luminance(&RGB::new(0, 255, 0)) - 0.7152).abs() < 0.001); // Green should have high luminance
+        assert!((luminance(&RGB::new(0, 0, 255)) - 0.0722).abs() < 0.001); // Blue should have very low luminance
         // Test edge cases with non-linear conversion
-        assert!((luminance(RGB::new(0, 0, 0)) - 0.0).abs() < 0.001);
-        assert!((luminance(RGB::new(255, 255, 255)) - 1.0).abs() < 0.001);
+        assert!((luminance(&RGB::new(0, 0, 0)) - 0.0).abs() < 0.001);
+        assert!((luminance(&RGB::new(255, 255, 255)) - 1.0).abs() < 0.001);
         // Test a subtle color difference that should be distinguishable
-        let very_dark = luminance(RGB::new(1, 1, 1));
-        let slightly_lighter = luminance(RGB::new(2, 2, 2));
+        let very_dark = luminance(&RGB::new(1, 1, 1));
+        let slightly_lighter = luminance(&RGB::new(2, 2, 2));
         assert!(slightly_lighter > very_dark);
     }
 
     #[test]
     fn test_classify_color() {
-        assert_eq!(classify_color(RGB::new(0, 0, 0)), "dark");
-        assert_eq!(classify_color(RGB::new(255, 255, 255)), "light");
-        assert_eq!(classify_color(RGB::new(128, 128, 128)), "dark"); // Mid-gray is below threshold
-        assert_eq!(classify_color(RGB::new(200, 200, 200)), "light");
-        assert_eq!(classify_color(RGB::new(50, 50, 50)), "dark");
+        assert_eq!(classify_color(&RGB::new(0, 0, 0)), "dark");
+        assert_eq!(classify_color(&RGB::new(255, 255, 255)), "light");
+        assert_eq!(classify_color(&RGB::new(128, 128, 128)), "dark"); // Mid-gray is below threshold
+        assert_eq!(classify_color(&RGB::new(200, 200, 200)), "light");
+        assert_eq!(classify_color(&RGB::new(50, 50, 50)), "dark");
     }
 
     #[test]
