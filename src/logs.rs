@@ -17,7 +17,7 @@ use std::env;
 /// # Examples
 ///
 /// ```
-/// # use lumos::logs::debug;
+/// # use lumos::debug;
 /// debug("Query response received");
 /// debug(&format!("Parsed RGB: {:?}", (255, 128, 0)));
 /// ```

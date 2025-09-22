@@ -5,8 +5,7 @@
 
 use std::process;
 
-use lumos::detect_background;
-use lumos::logs::debug;
+use lumos::{debug, detect_background};
 
 /// Main entry point for the lumos terminal background color detection utility.
 ///

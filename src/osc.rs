@@ -120,7 +120,7 @@ fn parse_color_response(buf: Vec<u8>) -> Result<String> {
 ///
 /// - `Ok(String)` containing the color response from the terminal
 /// - `Err` if the query fails
-pub fn query_bg_from_terminal() -> Result<String> {
+pub(crate) fn query_bg_from_terminal() -> Result<String> {
     let mut file = open_terminal_device()?;
     let old_termios = setup_raw_mode(&file)?;
 

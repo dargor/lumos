@@ -15,13 +15,14 @@ const DARK_THRESHOLD: f64 = 0.5;
 
 /// RGB color representation with red, green, and blue components.
 #[derive(Debug, PartialEq)]
-pub struct RGB {
+#[allow(clippy::upper_case_acronyms)]
+pub(crate) struct RGB {
     /// Red component (0-255)
-    pub r: u8,
+    r: u8,
     /// Green component (0-255)
-    pub g: u8,
+    g: u8,
     /// Blue component (0-255)
-    pub b: u8,
+    b: u8,
 }
 
 impl RGB {
@@ -36,37 +37,8 @@ impl RGB {
     /// # Returns
     ///
     /// A new RGB struct with the specified components.
-    #[must_use]
-    pub fn new(r: u8, g: u8, b: u8) -> Self {
+    fn new(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
-    }
-
-    /// Create a new RGB color from a tuple.
-    ///
-    /// # Arguments
-    ///
-    /// * `rgb` - Tuple containing (r, g, b) components
-    ///
-    /// # Returns
-    ///
-    /// A new RGB struct with the specified components.
-    #[must_use]
-    pub fn from_tuple(rgb: (u8, u8, u8)) -> Self {
-        Self {
-            r: rgb.0,
-            g: rgb.1,
-            b: rgb.2,
-        }
-    }
-
-    /// Convert RGB color to a tuple.
-    ///
-    /// # Returns
-    ///
-    /// A tuple containing (r, g, b) components.
-    #[must_use]
-    pub fn to_tuple(self) -> (u8, u8, u8) {
-        (self.r, self.g, self.b)
     }
 }
 
@@ -95,16 +67,7 @@ impl RGB {
 /// - A component value is invalid (e.g., non-hex characters, out of range)
 /// - The hex string has an invalid length (not 2 or 4 digits for hex values)
 /// - The RGB values are out of range (0-255)
-///
-/// # Examples
-///
-/// ```
-/// # use lumos::color::{RGB,parse_rgb};
-/// assert_eq!(parse_rgb("rgb:ffff/8080/0000").unwrap(), RGB::new(255, 128, 0));
-/// assert_eq!(parse_rgb("#ff8000").unwrap(), RGB::new(255, 128, 0));
-/// assert_eq!(parse_rgb("rgb(255, 128, 0)").unwrap(), RGB::new(255, 128, 0));
-/// ```
-pub fn parse_rgb(s: &str) -> Result<RGB> {
+pub(crate) fn parse_rgb(s: &str) -> Result<RGB> {
     let s = s.trim();
 
     // Handle rgb: or rgba: format
@@ -214,8 +177,7 @@ fn hex_to_u8(hex: &str) -> Result<u8> {
 /// L = 0.2126 × R + 0.7152 × G + 0.0722 × B
 ///
 /// Where R, G, B are the linearized RGB values.
-#[must_use]
-pub fn luminance(rgb: &RGB) -> f64 {
+pub(crate) fn luminance(rgb: &RGB) -> f64 {
     let r = f64::from(rgb.r) / 255.0;
     let g = f64::from(rgb.g) / 255.0;
     let b = f64::from(rgb.b) / 255.0;
@@ -242,8 +204,7 @@ pub fn luminance(rgb: &RGB) -> f64 {
 ///
 /// - `"dark"` if luminance < `DARK_THRESHOLD`
 /// - `"light"` if luminance >= `DARK_THRESHOLD`
-#[must_use]
-pub fn classify_color(rgb: &RGB) -> &'static str {
+pub(crate) fn classify_color(rgb: &RGB) -> &'static str {
     let lum = luminance(rgb);
     if lum < DARK_THRESHOLD {
         "dark"
@@ -369,11 +330,5 @@ mod tests {
         assert_eq!(rgb.r, 100);
         assert_eq!(rgb.g, 150);
         assert_eq!(rgb.b, 200);
-
-        let rgb_from_tuple = RGB::from_tuple((255, 128, 0));
-        assert_eq!(rgb_from_tuple, RGB::new(255, 128, 0));
-
-        let tuple = rgb.to_tuple();
-        assert_eq!(tuple, (100, 150, 200));
     }
 }

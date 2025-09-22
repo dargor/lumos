@@ -1,14 +1,14 @@
 //! Terminal background color detection library.
 
-pub mod color;
-pub mod logs;
+mod color;
+mod logs;
 mod osc;
 mod terminal;
 
 use anyhow::{Context, Result};
 
 use color::{classify_color, luminance, parse_rgb};
-use logs::debug;
+pub use logs::debug;
 use osc::query_bg_from_terminal;
 
 /// Detect terminal background color and determine if it's dark or light.

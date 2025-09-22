@@ -20,7 +20,7 @@ use termios::{ECHO, ICANON, TCSANOW, Termios, tcsetattr};
 ///
 /// - `Ok(File)` handle to the terminal device
 /// - `Err` if `/dev/tty` cannot be opened
-pub fn open_terminal_device() -> Result<File> {
+pub(crate) fn open_terminal_device() -> Result<File> {
     OpenOptions::new()
         .read(true)
         .write(true)
@@ -42,7 +42,7 @@ pub fn open_terminal_device() -> Result<File> {
 ///
 /// - `Ok(Termios)` containing the original terminal attributes that should be restored
 /// - `Err` if terminal attributes cannot be retrieved or set
-pub fn setup_raw_mode(file: &File) -> Result<Termios> {
+pub(crate) fn setup_raw_mode(file: &File) -> Result<Termios> {
     let fd = file.as_raw_fd();
     let old_termios = Termios::from_fd(fd).context("Failed to get terminal attributes")?;
 
@@ -67,7 +67,7 @@ pub fn setup_raw_mode(file: &File) -> Result<Termios> {
 ///
 /// - `Ok(())` if restoration was successful
 /// - `Err` if terminal attributes cannot be restored
-pub fn restore_terminal(file: &File, termios: &Termios) -> Result<()> {
+pub(crate) fn restore_terminal(file: &File, termios: &Termios) -> Result<()> {
     let fd = file.as_raw_fd();
     tcsetattr(fd, TCSANOW, termios).context("Failed to restore terminal attributes")
 }
