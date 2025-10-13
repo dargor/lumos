@@ -126,6 +126,7 @@ Feel free to open a merge request to report other terminals that work or don't w
 | **Terminal emulator** | **Status** |
 |-----------------------|------------|
 | WezTerm               | ✅         |
+| Ghostty               | ✅         |
 | VS Code               | ✅         |
 | Zed                   | ✅         |
 | Vim                   | ✅         |
