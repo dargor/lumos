@@ -25,13 +25,13 @@ Have you ever written a CLI tool that looks great in your dark terminal, only to
 
 ```bash
 # Run tests, build and install in ~/bin/
-$ just install
+just install
 
 # Use it
-$ lumos
+lumos
 
 # You can also use the python version (no external dependencies)
-$ ./lumos.py
+./lumos.py
 ```
 
 ## How It Works
@@ -222,10 +222,10 @@ See my [dotfiles](https://github.com/dargor/dotfiles) for more examples.
 
 ```bash
 # Quality assurance (security audit, tests...)
-$ just qa
+just qa
 
 # Debug mode (shows detection details)
-$ env DEBUG=1 cargo run
+env DEBUG=1 cargo run
 ```
 
 ## Technical Details
