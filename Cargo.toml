@@ -1,11 +1,11 @@
 [package]
 name = "lumos"
-version = "0.0.9"
+version = "0.0.10"
 edition = "2024"
 description = "CLI tool to detect whether your terminal is in light or dark mode"
 repository = "https://github.com/dargor/lumos"
 license = "MIT"
-keywords = ["terminal", "light", "dark", "theme", "background"]
+keywords = ["background", "dark", "light", "terminal", "theme"]
 categories = ["command-line-utilities", "development-tools"]
 # disable publishing, for now
 publish = false
@@ -14,14 +14,14 @@ publish = false
 authors = ["Gabriel Linder <linder.gabriel@gmail.com>"]
 maintainers = ["Gabriel Linder <linder.gabriel@gmail.com>"]
 
+[dependencies]
+anyhow = "1.0.100"
+regex = "1.12.2"
+termios = "0.3.3"
+
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 
 [lints.rust]
 missing_docs = "forbid"
 unsafe_code = "forbid"
-
-[dependencies]
-anyhow = "1.0.100"
-regex = "1.12.2"
-termios = "0.3.3"

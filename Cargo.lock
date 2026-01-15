@@ -25,7 +25,7 @@ checksum = "bcc35a38544a891a5f7c865aca548a982ccb3b8650a5b06d0fd33a10283c56fc"
 
 [[package]]
 name = "lumos"
-version = "0.0.9"
+version = "0.0.10"
 dependencies = [
  "anyhow",
  "regex",
