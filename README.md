@@ -11,6 +11,7 @@ The following models were used:
 - [Claude Sonnet 4](https://www.anthropic.com/claude/sonnet), through Zed offering
 - [Qwen3-30B-A3B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-30B-A3B-Instruct-2507), hosted locally
 - [gpt-oss-20b](https://huggingface.co/openai/gpt-oss-20b), hosted locally
+- [Claude Opus 4.5](https://www.anthropic.com/news/claude-opus-4-5), using Claude Code
 
 Even this file is mostly their work, even if I edited it a bit.
 
@@ -124,20 +125,20 @@ Feel free to open a merge request to report other terminals that work or don't w
 ### Terminal emulators
 
 | **Terminal emulator** | **Status** |
-|-----------------------|------------|
-| WezTerm               | ✅         |
-| Ghostty               | ✅         |
-| VS Code               | ✅         |
-| Zed                   | ✅         |
-| Vim                   | ✅         |
+| --------------------- | :--------: |
+| WezTerm               |     ✅     |
+| Ghostty               |     ✅     |
+| VS Code               |     ✅     |
+| Zed                   |     ✅     |
+| Vim                   |     ✅     |
 
 ### Terminal multiplexers
 
 | **Terminal multiplexer** | **Status** |
-|--------------------------|------------|
-| screen                   | ✅         |
-| tmux                     | ❌         |
-| zellij                   | ❌         |
+| ------------------------ | :--------: |
+| screen                   |     ✅     |
+| tmux                     |     ❌     |
+| zellij                   |     ❌     |
 
 ## Color Format Support
 
