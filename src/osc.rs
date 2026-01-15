@@ -7,31 +7,10 @@
 
 use anyhow::{Context, Result, anyhow};
 use regex::Regex;
-use std::fs::File;
 use std::io::{Read, Write};
 
 use crate::debug;
-use crate::terminal::{open_terminal_device, restore_terminal, setup_raw_mode};
-
-/// Sends an OSC 11 query to request the terminal's background color.
-///
-/// OSC (Operating System Command) 11 is a standard escape sequence
-/// that queries the terminal for its background color. The sequence
-/// `\x1b]11;?\x07` asks the terminal to respond with its current
-/// background color in RGB format.
-///
-/// # Arguments
-///
-/// - `file` - Mutable reference to the terminal device file handle
-///
-/// # Returns
-///
-/// - `Ok(())` if the query was sent successfully
-/// - `Err` if writing to the terminal fails
-fn send_osc_query(file: &mut File) -> Result<()> {
-    file.write_all(b"\x1b]11;?\x07")
-        .context("Failed to write OSC 11 query to terminal")
-}
+use crate::terminal::TerminalGuard;
 
 /// Reads the terminal's response to the OSC 11 query.
 ///
@@ -42,18 +21,18 @@ fn send_osc_query(file: &mut File) -> Result<()> {
 ///
 /// # Arguments
 ///
-/// - `file` - Mutable reference to the terminal device file handle
+/// - `terminal` - Mutable reference to the terminal guard
 ///
 /// # Returns
 ///
 /// - `Ok(Vec<u8>)` containing the raw terminal response
 /// - `Err` if reading from the terminal fails
-fn read_terminal_response(file: &mut File) -> Result<Vec<u8>> {
+fn read_terminal_response(terminal: &mut TerminalGuard) -> Result<Vec<u8>> {
     let mut buf = Vec::new();
 
     loop {
         let mut temp_buf = [0u8; 64];
-        match file.read(&mut temp_buf) {
+        match terminal.read(&mut temp_buf) {
             Ok(0) => {
                 debug!("got EOF");
                 break;
@@ -107,10 +86,10 @@ fn parse_color_response(buf: Vec<u8>) -> Result<String> {
 ///
 /// This function orchestrates the complete process of querying a terminal
 /// for its background color by:
-/// 1. Opening the terminal device for direct access
+/// 1. Opening the terminal device and setting raw mode
 /// 2. Sending the OSC 11 query
 /// 3. Reading and parsing the terminal's response
-/// 4. Cleaning up terminal state
+/// 4. Automatically restoring terminal attributes
 ///
 /// The function sends an OSC 11 query (`\x1b]11;?\x07`) to the terminal and waits
 /// for a response. The terminal should respond with the current background color
@@ -121,21 +100,16 @@ fn parse_color_response(buf: Vec<u8>) -> Result<String> {
 /// - `Ok(String)` containing the color response from the terminal
 /// - `Err` if the query fails
 pub(crate) fn query_bg_from_terminal() -> Result<String> {
-    let mut file = open_terminal_device()?;
-    let old_termios = setup_raw_mode(&file)?;
+    let mut terminal = TerminalGuard::new()?;
 
-    let result = (|| -> Result<String> {
-        send_osc_query(&mut file)?;
-        let buf = read_terminal_response(&mut file)?;
-        let color_str = parse_color_response(buf)?;
+    terminal
+        .write_all(b"\x1b]11;?\x07")
+        .context("Failed to write OSC 11 query to terminal")?;
 
-        Ok(color_str)
-    })();
+    let buf = read_terminal_response(&mut terminal)?;
+    let color_str = parse_color_response(buf)?;
 
-    // Always restore terminal attributes
-    restore_terminal(&file, &old_termios).context("Failed to restore terminal attributes")?;
-
-    result
+    Ok(color_str)
 }
 
 #[cfg(test)]
