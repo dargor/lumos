@@ -2,6 +2,11 @@
 _help:
     just -l
 
+# run rumdl check
+[group("qa")]
+rumdl:
+    rumdl check
+
 # run cargo machete
 [group("qa")]
 machete:
@@ -25,7 +30,7 @@ test:
 
 # run all QA suite
 [group("qa")]
-qa: machete audit clippy test
+qa: rumdl machete audit clippy test
 
 # install to ~/bin
 [group("install")]
