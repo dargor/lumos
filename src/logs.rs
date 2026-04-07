@@ -12,7 +12,7 @@ pub static DEBUG_ENABLED: LazyLock<AtomicBool> =
 
 /// Print debug messages to stderr if `DEBUG` environment variable is set.
 ///
-/// See the formatting documentation in [`std::fmt`](std://std::fmt)
+/// See the formatting documentation in [`std::fmt`](std::fmt)
 /// for more details on the macro argument syntax.
 ///
 /// # Examples
