@@ -260,6 +260,13 @@ mod tests {
 
     #[test]
     fn test_parse_rgb_rgb_colon_format() -> Result<()> {
+        assert_eq!(parse_rgb("rgb:00/11/22")?, RGB::new(0, 17, 34));
+        assert_eq!(parse_rgb("rgb:ff/00/00")?, RGB::new(255, 0, 0));
+        assert_eq!(parse_rgb("rgb:00/ff/00")?, RGB::new(0, 255, 0));
+        assert_eq!(parse_rgb("rgb:00/00/ff")?, RGB::new(0, 0, 255));
+
+        assert_eq!(parse_rgb("  rgb:00/11/22/33  ")?, RGB::new(0, 17, 34));
+
         assert_eq!(parse_rgb("rgb:0000/0000/0000")?, RGB::new(0, 0, 0));
         assert_eq!(parse_rgb("rgb:ffff/0000/0000")?, RGB::new(255, 0, 0));
         assert_eq!(parse_rgb("rgb:0000/ffff/0000")?, RGB::new(0, 255, 0));
@@ -267,7 +274,6 @@ mod tests {
         assert_eq!(parse_rgb("rgb:ffff/ffff/ffff")?, RGB::new(255, 255, 255));
         assert_eq!(parse_rgb("rgb:ffff/0000/ffff")?, RGB::new(255, 0, 255));
         assert_eq!(parse_rgb("rgb:abcd/C1AB/230A")?, RGB::new(171, 193, 35));
-        assert_eq!(parse_rgb("  rgb:00/11/22  ")?, RGB::new(0, 17, 34));
         assert_eq!(parse_rgb("rgb:ff00/0000/0000")?, RGB::new(255, 0, 0));
         assert_eq!(parse_rgb("rgb:1111/2222/3333/4444")?, RGB::new(17, 34, 51));
         assert_eq!(parse_rgb("rgba:1111/2222/3333/4444")?, RGB::new(17, 34, 51));
