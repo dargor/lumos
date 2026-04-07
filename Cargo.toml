@@ -15,8 +15,8 @@ authors = ["Gabriel Linder <linder.gabriel@gmail.com>"]
 maintainers = ["Gabriel Linder <linder.gabriel@gmail.com>"]
 
 [dependencies]
-anyhow = "1.0.100"
-regex = "1.12.2"
+anyhow = "1.0.102"
+regex = "1.12.3"
 termios = "0.3.3"
 
 [lints.clippy]
