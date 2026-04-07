@@ -150,7 +150,7 @@ fn hex_to_u8(hex: &str) -> Result<u8> {
         }
         4 => {
             // For longer hex values, scale from 16-bit to 8-bit using bit-shifting
-            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            #[allow(clippy::cast_possible_truncation)]
             Ok((n >> 8) as u8)
         }
         _ => Err(anyhow!(
