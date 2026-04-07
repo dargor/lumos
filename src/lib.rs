@@ -1,7 +1,7 @@
 //! Terminal background color detection library.
 
 mod color;
-mod logs;
+pub mod logs;
 mod osc;
 mod terminal;
 
