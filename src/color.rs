@@ -8,6 +8,11 @@
 
 use anyhow::{Context, Result, anyhow};
 use regex::Regex;
+use std::sync::LazyLock;
+
+static RGB_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"rgb\((\d+),\s*(\d+),\s*(\d+)\)").expect("Failed to compile RGB regex")
+});
 
 /// Threshold for determining if a color is dark or light based on luminance.
 /// Colors with luminance below this value are considered dark.
@@ -105,9 +110,7 @@ pub(crate) fn parse_rgb(s: &str) -> Result<RGB> {
     }
 
     // Handle rgb() format
-    let re =
-        Regex::new(r"rgb\((\d+),\s*(\d+),\s*(\d+)\)").context("Failed to compile RGB regex")?;
-    if let Some(caps) = re.captures(s) {
+    if let Some(caps) = RGB_RE.captures(s) {
         let r = caps[1]
             .parse::<u8>()
             .with_context(|| format!("Failed to parse red component: {}", &caps[1]))?;
