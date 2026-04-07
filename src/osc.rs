@@ -8,9 +8,13 @@
 use anyhow::{Context, Result, anyhow};
 use regex::Regex;
 use std::io::{Read, Write};
+use std::sync::LazyLock;
 
 use crate::debug;
 use crate::terminal::TerminalGuard;
+
+static OSC_11_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"]\s*11;([^\x07\x1b]*)").expect("Failed to compile OSC 11 regex"));
 
 /// Reads the terminal's response to the OSC 11 query.
 ///
@@ -72,8 +76,7 @@ fn parse_color_response(buf: Vec<u8>) -> Result<String> {
     let response = String::from_utf8(buf).context("Terminal response contained invalid UTF-8")?;
     debug!("response={response:?}");
 
-    let re = Regex::new(r"]\s*11;([^\x07\x1b]*)").context("Failed to compile regex")?;
-    let color_str = re
+    let color_str = OSC_11_RE
         .captures(&response)
         .and_then(|caps| caps.get(1))
         .map(|m| m.as_str().to_string())
