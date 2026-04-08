@@ -13,6 +13,7 @@ The following models were used:
 - [gpt-oss-20b](https://huggingface.co/openai/gpt-oss-20b), hosted locally
 - [Claude Opus 4.5](https://www.anthropic.com/claude/opus), using Claude Code
 - [gemma-4-26B-A4B-it](https://huggingface.co/google/gemma-4-26B-A4B-it), hosted locally
+- [Qwen3-Coder-Next](https://huggingface.co/Qwen/Qwen3-Coder-Next), hosted locally
 
 Even this file is mostly their work, even if I edited it a bit.
 

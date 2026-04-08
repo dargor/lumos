@@ -108,6 +108,7 @@ pub(crate) fn query_bg_from_terminal() -> Result<String> {
     terminal
         .write_all(b"\x1b]11;?\x07")
         .context("Failed to write OSC 11 query to terminal")?;
+    terminal.flush()?;
 
     let buf = read_terminal_response(&mut terminal)?;
     let color_str = parse_color_response(buf)?;
