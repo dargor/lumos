@@ -9,7 +9,7 @@ use anyhow::{Context, Result};
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 use std::os::unix::io::AsRawFd;
-use termios::{ECHO, ICANON, TCSANOW, Termios, tcsetattr};
+use termios::{ECHO, ICANON, TCSANOW, Termios, VMIN, VTIME, tcsetattr};
 
 use crate::debug;
 
@@ -51,6 +51,8 @@ impl TerminalGuard {
 
         let mut new_termios = original_termios;
         new_termios.c_lflag &= !(ICANON | ECHO);
+        new_termios.c_cc[VMIN] = 0;
+        new_termios.c_cc[VTIME] = 10;
         tcsetattr(fd, TCSANOW, &new_termios).context("Failed to set terminal to raw mode")?;
 
         Ok(Self {
