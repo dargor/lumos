@@ -14,7 +14,7 @@ use crate::debug;
 use crate::terminal::TerminalGuard;
 
 static OSC_11_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"]\s*11;([^\x07\x1b]*)").expect("Failed to compile OSC 11 regex"));
+    LazyLock::new(|| Regex::new(r"]\s*11;(.+?)(?:\x07|\x1b\\)").expect("Failed to compile OSC 11 regex"));
 
 /// Reads the terminal's response to the OSC 11 query.
 ///
