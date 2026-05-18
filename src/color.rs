@@ -149,9 +149,9 @@ fn hex_to_u8(hex: &str) -> Result<u8> {
             Ok(n as u8)
         }
         4 => {
-            // For longer hex values, scale from 16-bit to 8-bit using bit-shifting
+            // Scale from 16-bit to 8-bit with rounding instead of truncation.
             #[allow(clippy::cast_possible_truncation)]
-            Ok((n >> 8) as u8)
+            Ok(((n * 255 + 32_767) / 65_535) as u8)
         }
         _ => Err(anyhow!(
             "Invalid hex length: expected 2 or 4 characters, got {}",
@@ -274,7 +274,7 @@ mod tests {
         assert_eq!(parse_rgb("rgb:ffff/ffff/ffff")?, RGB::new(255, 255, 255));
         assert_eq!(parse_rgb("rgb:ffff/0000/ffff")?, RGB::new(255, 0, 255));
         assert_eq!(parse_rgb("rgb:abcd/C1AB/230A")?, RGB::new(171, 193, 35));
-        assert_eq!(parse_rgb("rgb:ff00/0000/0000")?, RGB::new(255, 0, 0));
+        assert_eq!(parse_rgb("rgb:ff00/0000/0000")?, RGB::new(254, 0, 0));
         assert_eq!(parse_rgb("rgb:1111/2222/3333/4444")?, RGB::new(17, 34, 51));
         assert_eq!(parse_rgb("rgba:1111/2222/3333/4444")?, RGB::new(17, 34, 51));
 
@@ -291,6 +291,8 @@ mod tests {
         assert_eq!(hex_to_u8("ff")?, 255);
         assert_eq!(hex_to_u8("ffff")?, 255);
         assert_eq!(hex_to_u8("0000")?, 0);
+        assert_eq!(hex_to_u8("00ff")?, 1);
+        assert_eq!(hex_to_u8("0100")?, 1);
         assert_eq!(hex_to_u8("8000")?, 128);
         assert_eq!(hex_to_u8("7fff")?, 127);
         assert_eq!(hex_to_u8("0080")?, 0);
