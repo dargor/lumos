@@ -20,6 +20,7 @@ audit:
 # run clippy
 [group("qa")]
 clippy:
+    cargo fmt --check
     cargo clippy --all-targets
 
 # run tests
